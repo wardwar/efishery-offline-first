@@ -1,8 +1,9 @@
 import React from 'react';
 
+import {  Checkbox,Table,Form,Button} from 'semantic-ui-react'
+
 import taskStore from './store/tasks';
 
-import logo from './logo.svg';
 import './App.css';
 
 window.taskStore = taskStore;
@@ -16,9 +17,10 @@ class BaseComponent extends React.PureComponent {
 }
 
 class App extends BaseComponent {
+
   state = {
-    isInitialized: false,
-  }
+    isInitialized: false
+    }
 
   render() {
     if (!this.state.isInitialized) {
@@ -27,13 +29,9 @@ class App extends BaseComponent {
 
     return (
       <Home />
-      // userStore.data.email ? (
-      //   <Home />
-      // ) : (
-      //   <Login />
-      // )
     );
   }
+
   async componentDidMount() {
     taskStore.setName("task-manager");
     await taskStore.initialize();
@@ -42,16 +40,13 @@ class App extends BaseComponent {
     });
   }
 
-    // this.taskStore = taskStore.subscribe(this.rerender);
-  // }
-
   async componentDidUpdate() {
-    // if (userStore.data.email && !todosStore.isInitialized) {
+  
       console.log('popup initialize all offline data...');
       taskStore.setName("task-manager");
       await taskStore.initialize();
       console.log('popup done');
-    // }
+  
   }
 
   componentWillUnmount() {
@@ -59,70 +54,95 @@ class App extends BaseComponent {
   }
 
 }
-
-// function App() {
-//   return (
-//     <div className="App">
-//       <header className="App-header">
-//         <img src={logo} className="App-logo" alt="logo" />
-//         <p>
-//           Edit <code>src/App.js</code> and save to reload.
-//         </p>
-//         <a
-//           className="App-link"
-//           href="https://reactjs.org"
-//           target="_blank"
-//           rel="noopener noreferrer"
-//         >
-//           Learn React
-//         </a>
-//       </header>
-//     </div>
-//   );
-// }
-
 class Home extends BaseComponent {
-  state = {
-    input_text: '',
+  constructor(props){
+    super(props);
+    this.state = {
+      id:'',
+      input_text: '',
+      isEdit : false
+    }
   }
+  
+
+  handleChange = (e,{value,checked,id}) => {
+   this.editSingle({
+     id,
+     checked,
+     value
+   })
+  }
+
 
   render() {
     return (
-      <div>
-        <p>
-          halo {taskStore.data.content} <button onClick={this.logout}>logout</button>
-        </p>
+      <div className="ui container">
+    <h2 className="title">{this.state.isEdit ?"Edit Task":"Add New Task"}</h2>
+         <Form onSubmit={this.addTask}>
+        <Form.Group>
+          <Form.Input
+            placeholder='Content'
+            name='content'
+            value={this.state.input_text}
+             onChange={this.setInput_text}
+            
+          />
+          <Form.Button content='Submit' />
+        </Form.Group>
+      </Form>
+        
+        <Table celled compact definition>
+  <Table.Header fullWidth>
+    <Table.Row>
+      <Table.HeaderCell >Completation</Table.HeaderCell>
+      <Table.HeaderCell>Content</Table.HeaderCell>
+      <Table.HeaderCell>Created At</Table.HeaderCell>
+      <Table.HeaderCell>Action</Table.HeaderCell>
+    </Table.Row>
+  </Table.Header>
 
-        <h2>
-          todos: <button onClick={this.upload}>
-            {`upload (${taskStore.countUnuploadeds()})`}
-          </button>
-        </h2>
-        <pre>
-          {/* last upload: {taskStore.dataMeta.tsUpload} */}
-        </pre>
-        {
-          taskStore.data.map((todo, index) => (
-            <p key={todo._id}>
-              {index + 1}. {todo.text}
-              {
-                !taskStore.checkIsUploaded(todo) && (
-                  ` (belum upload)`
-                )
-              }
-              {` `}
-              <button onClick={() => this.deleteTodo(todo._id)}>
-                X
-              </button>
-            </p>
-          ))
-        }
+  <Table.Body>
+      {
+           taskStore.data.map((task,index) => (
+              <Table.Row>
+              <Table.Cell collapsing>
+                <Checkbox 
+                defaultChecked={task.checked}
+                toggle
+                id={task._id}
+                onChange={this.handleChangeCheckbox}
+                 />
+              </Table.Cell>
+              <Table.Cell>{task.content}</Table.Cell>
+              <Table.Cell>{task.createdAt}</Table.Cell>
+              <Table.Cell>
+                  <Button.Group>
+                      <Button onClick={this.handleUpdate} id={task._id} content={task.content}>Update</Button>
+                      <Button color="red" id={task._id} onClick={this.handleDelete}>Delete</Button>
+                  </Button.Group>
+              </Table.Cell>
+            </Table.Row>
+           ))
+      }
+   
+  </Table.Body>
 
-        <h2>add new todo</h2>
-        <form onSubmit={this.addTodo}>
-          <p><input type='text' value={this.state.input_text} onChange={this.setInput_text} /></p>
-          <p><button>submit</button></p>
-        </form>
+  <Table.Footer fullWidth>
+    <Table.Row>
+      <Table.HeaderCell />
+      <Table.HeaderCell colSpan='4'>
+
+        <Button
+          floated='right'
+          primary
+          size='small'
+          onClick={this.upload}
+        >{`Sync (${taskStore.countUnuploadeds()})`}
+        </Button>
+      </Table.HeaderCell>
+    </Table.Row>
+  </Table.Footer>
+</Table>
       </div>
     );
   }
@@ -141,20 +161,31 @@ class Home extends BaseComponent {
     });
   }
 
-  logout = async () => {
-    await taskStore.deinitialize();
-    // await userStore.deleteSingle();
+  handleUpdate = (event,{id,content}) => {
+    this.setState({
+      id:id,
+      isEdit : true,
+      input_text: content
+    })
+
   }
 
-  addTodo = async (event) => {
+  addTask = async (event) => {
     event.preventDefault();
+    if(this.state.isEdit){
+      await taskStore.editItem(this.state.id,{
+        content:this.state.input_text,
+      })
+    }else{
     await taskStore.addItem({
-      text: this.state.input_text,
+      content: this.state.input_text,
+      checked: false
     }, taskStore.data);
-    this.setState({ input_text: '' });
+  }
+    this.setState({ input_text: '' ,isEdit:false,id:''});
   }
 
-  deleteTodo = async (id) => {
+  handleDelete = async (event,{id}) => {
     taskStore.deleteItem(id, taskStore.data);
   }
 
@@ -168,6 +199,16 @@ class Home extends BaseComponent {
       console.log('upload failed');
     }
   }
+
+  handleChangeCheckbox = async (event,{checked,id}) => {
+ 
+    await taskStore.editItem(id,{
+      checked : checked
+    })
+
+  }
+
+  
 }
 
 export default App;

@@ -60,7 +60,8 @@ class Home extends BaseComponent {
     this.state = {
       id:'',
       input_text: '',
-      isEdit : false
+      isEdit : false,
+      tag: ''
     }
   }
   
@@ -80,11 +81,18 @@ class Home extends BaseComponent {
     <h2 className="title">{this.state.isEdit ?"Edit Task":"Add New Task"}</h2>
          <Form onSubmit={this.addTask}>
         <Form.Group>
-          <Form.Input
+        <Form.Input
             placeholder='Content'
             name='content'
             value={this.state.input_text}
              onChange={this.setInput_text}
+            
+          />
+          <Form.Input
+            placeholder='Tag'
+            name='tag'
+            value={this.state.tag}
+             onChange={this.setTag_text}
             
           />
           <Form.Button content='Submit' />
@@ -96,6 +104,7 @@ class Home extends BaseComponent {
     <Table.Row>
       <Table.HeaderCell >Completation</Table.HeaderCell>
       <Table.HeaderCell>Content</Table.HeaderCell>
+      <Table.HeaderCell>Tag</Table.HeaderCell>
       <Table.HeaderCell>Created At</Table.HeaderCell>
       <Table.HeaderCell>Action</Table.HeaderCell>
     </Table.Row>
@@ -114,10 +123,11 @@ class Home extends BaseComponent {
                  />
               </Table.Cell>
               <Table.Cell>{task.content}</Table.Cell>
+              <Table.Cell>{task.tag}</Table.Cell>
               <Table.Cell>{task.createdAt}</Table.Cell>
               <Table.Cell>
                   <Button.Group>
-                      <Button onClick={this.handleUpdate} id={task._id} content={task.content}>Update</Button>
+                      <Button onClick={this.handleUpdate} id={task._id} content={task.content} tag={task.tag}>Update</Button>
                       <Button color="red" id={task._id} onClick={this.handleDelete}>Delete</Button>
                   </Button.Group>
               </Table.Cell>
@@ -161,10 +171,17 @@ class Home extends BaseComponent {
     });
   }
 
-  handleUpdate = (event,{id,content}) => {
+  setTag_text = (event) => {
+    this.setState({
+      tag: event.target.value,
+    });
+  }
+
+  handleUpdate = (event,{id,content,tag}) => {
     this.setState({
       id:id,
       isEdit : true,
+      tag:tag,
       input_text: content
     })
 
@@ -175,14 +192,16 @@ class Home extends BaseComponent {
     if(this.state.isEdit){
       await taskStore.editItem(this.state.id,{
         content:this.state.input_text,
+        tag:this.state.tag,
       })
     }else{
     await taskStore.addItem({
       content: this.state.input_text,
+      tag:this.state.tag,
       checked: false
     }, taskStore.data);
   }
-    this.setState({ input_text: '' ,isEdit:false,id:''});
+    this.setState({ input_text: '' ,isEdit:false,id:'',tag:''});
   }
 
   handleDelete = async (event,{id}) => {
